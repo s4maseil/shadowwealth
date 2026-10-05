@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="description" content="ShadowWealth – Mental Accounting für bewusste Nicht-Ausgaben." />
+  <title>ShadowWealth · Mental Accounting</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231B201D'/%3E%3Ccircle cx='19' cy='19' r='7.5' fill='%230E9F6E' fill-opacity='.35'/%3E%3Ccircle cx='14' cy='14' r='7.5' fill='%230E9F6E'/%3E%3C/svg%3E" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: { DEFAULT: "#1B201D", soft: "#4A524D", mute: "#7C857F" },
+            paper: "#F5F7F6",
+            mist: "#E3E8E5",
+            jade: { 50: "#ECF8F2", 100: "#D3F0E2", 300: "#7FD4AE", 400: "#3DBB86", 500: "#0E9F6E", 600: "#0B8A5F", 700: "#065F46" },
+          },
+          boxShadow: {
+            soft: "0 1px 2px rgba(27,32,29,.04), 0 10px 30px -18px rgba(27,32,29,.25)",
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root { color-scheme: light; }
+    html { -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #F5F7F6;
+      color: #1B201D;
+    }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .no-scrollbar { scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .safe-top { padding-top: env(safe-area-inset-top); }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid #0E9F6E; outline-offset: 2px;
+    }
+
+    /* ── Das Markenelement: Zahl mit Schatten (Brutto) ── */
+    .shadow-figure { position: relative; display: inline-block; line-height: 1; }
+    .shadow-figure .ghost {
+      position: absolute; left: .14em; top: .2em; white-space: nowrap;
+      color: transparent; -webkit-text-stroke: 1.5px rgba(14,159,110,.55);
+      pointer-events: none; user-select: none;
+    }
+    .shadow-figure .main { position: relative; }
+    .shadow-mini { text-shadow: .07em .07em 0 rgba(14,159,110,.22); }
+
+    /* ── Formularfelder (16px gegen iOS-Zoom) ── */
+    .input {
+      width: 100%; height: 2.75rem; border-radius: .875rem; border: 1px solid #E3E8E5;
+      background: #fff; padding: 0 .875rem; font-size: 1rem; color: #1B201D;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .input::placeholder { color: #A3ABA6; }
+    .input:focus { outline: none; border-color: #0E9F6E; box-shadow: 0 0 0 4px rgba(14,159,110,.12); }
+    select.input {
+      appearance: none; -webkit-appearance: none; padding-right: 2.25rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237C857F' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right .875rem center;
+    }
+    .input-inline {
+      width: 100%; height: 2.5rem; border-radius: .75rem; border: 1px solid transparent;
+      background: transparent; padding: 0 .5rem; font-size: 1rem; color: #1B201D;
+    }
+    .input-inline:hover { border-color: #E3E8E5; }
+    .input-inline:focus { outline: none; border-color: #0E9F6E; background: #fff; }
+    .field-label { display: block; font-size: .8125rem; font-weight: 500; color: #4A524D; }
+    .field-hint { display: block; margin-top: .25rem; font-size: .75rem; color: #7C857F; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+      height: 3rem; border-radius: 1rem; background: #0E9F6E; color: #fff;
+      font-weight: 600; font-size: .9375rem; transition: background .15s, transform .1s;
+    }
+    .btn-primary:hover { background: #0B8A5F; }
+    .btn-primary:active { transform: scale(.98); }
+    .btn-quiet {
+      display: inline-flex; align-items: center; gap: .375rem; height: 2.25rem; padding: 0 .875rem;
+      border-radius: 9999px; border: 1px solid #E3E8E5; background: #fff;
+      font-size: .8125rem; font-weight: 500; color: #4A524D; transition: background .15s;
+    }
+    .btn-quiet:hover { background: #F5F7F6; }
+
+    /* ── Segmente & Chips ── */
+    .seg-track { display: inline-flex; gap: 2px; padding: 3px; border-radius: 9999px; background: #EAEFEC; }
+    .seg-track.full { display: flex; width: 100%; }
+    .seg-track.full .seg { flex: 1 1 0; }
+    .seg {
+      padding: .4rem .8rem; border-radius: 9999px; font-size: .8125rem; font-weight: 500;
+      color: #7C857F; white-space: nowrap; transition: background .15s, color .15s;
+    }
+    .seg:hover { color: #1B201D; }
+    .seg[aria-pressed="true"] { background: #fff; color: #1B201D; box-shadow: 0 1px 2px rgba(27,32,29,.1); }
+    .chip {
+      display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .8rem; border-radius: 9999px;
+      border: 1px solid #E3E8E5; background: #fff; font-size: .8125rem; font-weight: 500;
+      color: #7C857F; white-space: nowrap; transition: all .15s;
+    }
+    .chip[aria-pressed="true"] { border-color: #A7DFC5; background: #ECF8F2; color: #065F46; }
+    .chip-range[aria-pressed="true"] { border-color: #1B201D; background: #1B201D; color: #fff; }
+
+    /* ── Schalter ── */
+    .switch {
+      appearance: none; -webkit-appearance: none; width: 2.75rem; height: 1.625rem; border-radius: 9999px;
+      background: #D5DCD8; position: relative; cursor: pointer; flex-shrink: 0; transition: background .2s;
+    }
+    .switch::after {
+      content: ""; position: absolute; top: 3px; left: 3px; width: 1.25rem; height: 1.25rem; border-radius: 9999px;
+      background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s;
+    }
+    .switch:checked { background: #0E9F6E; }
+    .switch:checked::after { transform: translateX(1.125rem); }
+
+    /* ── Quick Actions: Bestätigung nach dem Tippen ── */
+    .qa .qa-check { opacity: 0; transform: scale(.5); transition: opacity .2s, transform .25s cubic-bezier(.3,1.6,.6,1); }
+    .qa.qa-done { border-color: #0E9F6E; }
+    .qa.qa-done .qa-check { opacity: 1; transform: scale(1); }
+
+    /* ── Navigation ── */
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: .5rem 0 .6rem; color: #8E968F; }
+    .nav-btn .nav-pill { display: grid; place-items: center; width: 3.5rem; height: 1.9rem; border-radius: 9999px; transition: background .2s; }
+    .nav-btn[aria-current="page"] { color: #065F46; }
+    .nav-btn[aria-current="page"] .nav-pill { background: #D3F0E2; }
+
+    /* ── Sheet & Toasts ── */
+    .backdrop { opacity: 0; transition: opacity .3s; }
+    .backdrop.open { opacity: 1; }
+    .sheet { transform: translateY(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+    .sheet.open { transform: translateY(0); }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+    .toast { animation: toast-in .22s ease-out; transition: opacity .2s, transform .2s; }
+    .toast.out { opacity: 0; transform: translateY(8px); }
+    .badge-on { box-shadow: 0 8px 18px -8px rgba(14,159,110,.75); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen antialiased">
+
+  <!-- ═════════ Kopfzeile ═════════ -->
+  <header class="sticky top-0 z-30 border-b border-mist bg-white/85 backdrop-blur-xl safe-top">
+    <div class="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
+      <button type="button" data-action="tab" data-tab="tracker" class="flex items-center gap-2.5" aria-label="Zum Tracker">
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="#1B201D" />
+          <circle cx="19" cy="19" r="7.5" fill="#0E9F6E" fill-opacity=".35" />
+          <circle cx="14" cy="14" r="7.5" fill="#0E9F6E" />
+          <circle cx="14" cy="14" r="4.2" fill="none" stroke="#1B201D" stroke-opacity=".35" stroke-width="1.4" />
+        </svg>
+        <span class="text-left">
+          <span class="block text-[15px] font-semibold leading-none tracking-tight">ShadowWealth</span>
+          <span class="mt-1 block text-[11px] leading-none text-ink-mute">Was ihr nicht ausgebt, zählt mit</span>
+        </span>
+      </button>
+      <div class="flex items-center gap-1">
+        <span id="syncStatus" class="inline-flex items-center gap-1.5 rounded-full bg-paper px-2.5 py-1 text-[11px] font-medium text-ink-soft"></span>
+        <button type="button" data-action="open-settings" class="grid h-10 w-10 place-items-center rounded-full text-ink-soft transition hover:bg-paper" aria-label="Einstellungen öffnen">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="banner" class="mx-auto hidden max-w-2xl px-4 pt-3"></div>
+
+  <main class="mx-auto max-w-2xl px-4 pb-36 pt-4">
+
+    <!-- ═════════ TAB 1: TRACKER ═════════ -->
+    <section data-tab-panel="tracker" aria-label="Tracker">
+      <div id="trackerSummary"></div>
+
+      <div class="mt-6">
+        <p class="text-sm font-semibold">Wer verzichtet gerade?</p>
+        <div id="personSwitch" class="seg-track full mt-2"></div>
+      </div>
+
+      <div class="mt-6 flex items-baseline justify-between">
+        <h2 class="text-sm font-semibold">Schnell erfassen</h2>
+        <p class="text-xs text-ink-mute">Ein Tipp speichert sofort</p>
+      </div>
+      <div id="quickActions" class="mt-3 grid grid-cols-2 gap-3"></div>
+
+      <form id="manualForm" class="mt-6 rounded-[1.25rem] border border-mist bg-white p-5 shadow-soft" novalidate autocomplete="off">
+        <h2 class="text-sm font-semibold">Eigenen Verzicht eintragen</h2>
+        <p class="mt-0.5 text-xs text-ink-mute">Bekannte Titel füllen Betrag und Kategorie automatisch aus.</p>
+
+        <label class="field-label mt-4" for="fTitle">Titel</label>
+        <input id="fTitle" class="input mt-1" type="text" maxlength="60" list="titleSuggestions" placeholder="z. B. Mittagessen mitgebracht" />
+        <datalist id="titleSuggestions"></datalist>
+
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label" for="fAmount">Betrag</label>
+            <div class="relative mt-1">
+              <input id="fAmount" class="input pr-8 tabular" type="text" inputmode="decimal" placeholder="0,00" />
+              <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-ink-mute">€</span>
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="fDate">Datum</label>
+            <input id="fDate" class="input mt-1" type="date" />
+          </div>
+        </div>
+
+        <label class="field-label mt-3" for="fCategory">Kategorie</label>
+        <select id="fCategory" class="input mt-1"></select>
+
+        <p id="formError" class="mt-3 hidden text-sm text-rose-600" role="alert"></p>
+
+        <button type="submit" class="btn-primary mt-5 w-full">
+          <i class="fa-solid fa-plus"></i> Verzicht speichern
+        </button>
+      </form>
+    </section>
+
+    <!-- ═════════ TAB 2: DASHBOARD ═════════ -->
+    <section data-tab-panel="dashboard" class="hidden" aria-label="Dashboard">
+      <div id="filterBar"></div>
+      <div id="kpiArea"></div>
+      <div id="levelCard" class="mt-3"></div>
+
+      <article class="mt-3 rounded-[1.25rem] border border-mist bg-white p-5 shadow-soft">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="text-sm font-semibold">Verlauf</h3>
+            <p id="chartSubtitle" class="mt-0.5 truncate text-xs text-ink-mute"></p>
+          </div>
+          <button type="button" data-action="toggle-chart-config" class="btn-quiet shrink-0" aria-controls="chartConfig">
+            <i class="fa-solid fa-sliders text-xs"></i> Anpassen
+          </button>
+        </div>
+        <div id="chartConfig" class="hidden"></div>
+        <div class="relative mt-4 h-64">
+          <canvas id="historyChart" role="img" aria-label="Verlauf der Ersparnisse"></canvas>
+          <div id="historyEmpty" class="pointer-events-none absolute inset-0 hidden place-items-center text-center text-sm text-ink-mute"></div>
+        </div>
+      </article>
+
+      <article class="mt-3 rounded-[1.25rem] border border-mist bg-white p-5 shadow-soft">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 class="text-sm font-semibold">Woraus sich das zusammensetzt</h3>
+          <div id="donutDims" class="seg-track no-scrollbar max-w-full overflow-x-auto"></div>
+        </div>
+        <div class="mt-5 flex flex-col items-center gap-5 sm:flex-row sm:items-center">
+          <div class="relative h-44 w-44 shrink-0">
+            <canvas id="donutChart" role="img" aria-label="Verteilung der Ersparnisse"></canvas>
+            <div id="donutCenter" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"></div>
+          </div>
+          <ul id="donutLegend" class="w-full min-w-0 flex-1 divide-y divide-mist"></ul>
+        </div>
+      </article>
+
+      <article id="recurringCard" class="mt-3 rounded-[1.25rem] border border-mist bg-white p-5 shadow-soft"></article>
+      <article id="badgesCard" class="mt-3 rounded-[1.25rem] border border-mist bg-white p-5 shadow-soft"></article>
+    </section>
+
+    <!-- ═════════ TAB 3: HISTORIE ═════════ -->
+    <section data-tab-panel="history" class="hidden" aria-label="Historie">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-ink-mute"></i>
+        <input id="historySearch" class="input pl-10" type="search" placeholder="Titel, Kategorie oder Person suchen" />
+      </div>
+      <p id="historySummary" class="mt-3 text-xs text-ink-mute"></p>
+      <div id="historyList" class="mt-1 space-y-4"></div>
+      <p class="mt-8 text-center text-xs text-ink-mute">
+        <i class="fa-solid fa-arrows-rotate mr-1"></i>
+        Laufende Einsparungen rechnet die App automatisch mit, sie stehen nicht in dieser Liste.
+      </p>
+    </section>
+  </main>
+
+  <!-- ═════════ Bottom Navigation ═════════ -->
+  <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-mist bg-white/90 backdrop-blur-xl safe-bottom" aria-label="Hauptnavigation">
+    <div class="mx-auto grid max-w-2xl grid-cols-3">
+      <button type="button" class="nav-btn" data-action="tab" data-tab="tracker">
+        <span class="nav-pill"><i class="fa-solid fa-bolt"></i></span>
+        <span class="text-[11px] font-medium">Tracker</span>
+      </button>
+      <button type="button" class="nav-btn" data-action="tab" data-tab="dashboard">
+        <span class="nav-pill"><i class="fa-solid fa-chart-column"></i></span>
+        <span class="text-[11px] font-medium">Dashboard</span>
+      </button>
+      <button type="button" class="nav-btn" data-action="tab" data-tab="history">
+        <span class="nav-pill"><i class="fa-solid fa-clock-rotate-left"></i></span>
+        <span class="text-[11px] font-medium">Historie</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═════════ Einstellungen (Bottom Sheet) ═════════ -->
+  <div id="settingsSheet" class="fixed inset-0 z-40 hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div data-action="close-settings" class="backdrop absolute inset-0 bg-ink/40 backdrop-blur-sm"></div>
+    <div id="settingsPanel" class="sheet absolute inset-x-0 bottom-0 mx-auto flex max-w-2xl flex-col rounded-t-[1.75rem] bg-white shadow-2xl" style="max-height: 92vh; max-height: 92dvh;">
+      <div class="relative flex items-center justify-between px-5 pb-3 pt-5">
+        <span class="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-mist" aria-hidden="true"></span>
+        <h2 id="settingsTitle" class="text-base font-semibold">Einstellungen</h2>
+        <button type="button" data-action="close-settings" class="grid h-9 w-9 place-items-center rounded-full bg-paper text-ink-soft" aria-label="Einstellungen schließen">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="settingsBody" class="flex-1 overflow-y-auto overscroll-contain px-5 pb-10 safe-bottom"></div>
+    </div>
+  </div>
+
+  <!-- ═════════ Toasts ═════════ -->
+  <div id="toastStack" class="pointer-events-none fixed inset-x-0 z-50 flex flex-col items-center gap-2 px-4" style="bottom: calc(5.5rem + env(safe-area-inset-bottom));" aria-live="polite"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
