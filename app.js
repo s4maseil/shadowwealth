@@ -4,11 +4,9 @@
  * ██                                                                        ██
  * ████████████████████████████████████████████████████████████████████████████
  *
- *  Firebase Console → Zahnrad „Projekteinstellungen“ → Allgemein → „Meine Apps“
- *  → Web-App auswählen → Objekt „firebaseConfig“ kopieren → Platzhalter ersetzen.
- *
- *  Solange hier Platzhalter stehen, startet ShadowWealth automatisch im
- *  lokalen DEMO-MODUS (Daten nur in diesem Browser, keine Synchronisation).
+ *  ✅ Eingetragen: Firebase-Projekt „shadowwealth-b8ad1“.
+ *  Quelle: Firebase Console → Projekteinstellungen → Allgemein → „Meine Apps“ → Config.
+ *  Stehen hier Platzhalter (HIER_…), startet die App im lokalen DEMO-MODUS.
  */
 const firebaseConfig = {
   apiKey: "AIzaSyB61_T7zgvBZ8Qe_iUqOwNjjpuL7rDMo1E",
@@ -19,9 +17,9 @@ const firebaseConfig = {
   appId: "1:890529980976:web:99d183dad8bdefc33743f5",
 };
 
-/* Name eures Haushalts in Firestore (Buchstaben, Zahlen, Bindestriche).
-   Struktur: households/{HOUSEHOLD_ID}  → Einstellungen
-             households/{HOUSEHOLD_ID}/entries/{id} → Einträge             */
+/* Name eures Haushalts in Firestore – muss zu den Sicherheitsregeln passen.
+   Struktur: households/{HOUSEHOLD_ID}              → Einstellungen
+             households/{HOUSEHOLD_ID}/entries/{id} → Einträge                */
 const HOUSEHOLD_ID = "unser-haushalt";
 
 /* ████████████████████████████  ENDE FIREBASE CONFIG  ████████████████████████ */
@@ -36,6 +34,9 @@ import {
 /* ═══════════════════════════════════════════════════════════════════════════
    1 · APP-KONFIGURATION (frei anpassbar)
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Namen der beiden Personen (in der App unter „Einstellungen“ änderbar) */
+const DEFAULT_NAMES = { A: "Matze", B: "Pia" };
 
 const CATEGORIES = {
   mobilitaet: { label: "Mobilität",              icon: "fa-train",          color: "#059669" },
@@ -58,18 +59,18 @@ const QUICK_ACTIONS = [
 
 /* Laufende Einsparungen (€ pro Monat) – in der App unter „Einstellungen“ änderbar */
 const DEFAULT_RECURRING = [
-  { id: "zweitwagen", label: "Kein Zweitwagen",              amount: 300, category: "mobilitaet", icon: "fa-car" },
-  { id: "miete",      label: "Miete unter Mietspiegel",      amount: 200, category: "wohnen",     icon: "fa-house" },
+  { id: "zweitwagen", label: "Kein Zweitwagen",               amount: 300, category: "mobilitaet", icon: "fa-car" },
+  { id: "miete",      label: "Miete unter Mietspiegel",       amount: 200, category: "wohnen",     icon: "fa-house" },
   { id: "kita",       label: "Kita-Zuschuss vom Arbeitgeber", amount: 100, category: "familie",    icon: "fa-school" },
-  { id: "internet",   label: "Internet der Schwiegereltern", amount: 40,  category: "medien",     icon: "fa-wifi" },
-  { id: "streaming",  label: "Keine Streaming-Abos",         amount: 20,  category: "medien",     icon: "fa-tv" },
-  { id: "handy",      label: "Nur Diensthandy",              amount: 45,  category: "medien",     icon: "fa-mobile-screen-button" },
-  { id: "duschen",    label: "Kurz duschen",                 amount: 15,  category: "wohnen",     icon: "fa-shower" },
-  { id: "windeln",    label: "Eigenmarken-Windeln",          amount: 15,  category: "familie",    icon: "fa-baby" },
-  { id: "secondhand", label: "Second-Hand-Kinderkleidung",   amount: 100, category: "familie",    icon: "fa-shirt" },
-  { id: "alkohol",    label: "Kein Alkohol & Tabak",         amount: 80,  category: "gesundheit", icon: "fa-ban-smoking" },
-  { id: "neobroker",  label: "Neobroker statt Bankgebühren", amount: 30,  category: "finanzen",   icon: "fa-chart-line" },
-  { id: "urlaub",     label: "Günstigere Jahresurlaube",     amount: 250, category: "freizeit",   icon: "fa-umbrella-beach" },
+  { id: "internet",   label: "Internet der Schwiegereltern",  amount: 40,  category: "medien",     icon: "fa-wifi" },
+  { id: "streaming",  label: "Keine Streaming-Abos",          amount: 20,  category: "medien",     icon: "fa-tv" },
+  { id: "handy",      label: "Nur Diensthandy",               amount: 45,  category: "medien",     icon: "fa-mobile-screen-button" },
+  { id: "duschen",    label: "Kurz duschen",                  amount: 15,  category: "wohnen",     icon: "fa-shower" },
+  { id: "windeln",    label: "Eigenmarken-Windeln",           amount: 15,  category: "familie",    icon: "fa-baby" },
+  { id: "secondhand", label: "Second-Hand-Kinderkleidung",    amount: 100, category: "familie",    icon: "fa-shirt" },
+  { id: "alkohol",    label: "Kein Alkohol & Tabak",          amount: 80,  category: "gesundheit", icon: "fa-ban-smoking" },
+  { id: "neobroker",  label: "Neobroker statt Bankgebühren",  amount: 30,  category: "finanzen",   icon: "fa-chart-line" },
+  { id: "urlaub",     label: "Günstigere Jahresurlaube",      amount: 250, category: "freizeit",   icon: "fa-umbrella-beach" },
 ];
 
 /* Gamification-Konzept:
@@ -88,18 +89,18 @@ const LEVELS = [
 ];
 
 const BADGES = [
-  { id: "first",    icon: "fa-seedling",       name: "Erster Schatten",        desc: "Den ersten bewussten Verzicht eingetragen.",   target: 1,   value: s => s.count },
-  { id: "habit",    icon: "fa-repeat",         name: "Gewohnheitstier",        desc: "50 Verzichte eingetragen.",                    target: 50,  value: s => s.count },
-  { id: "coffee",   icon: "fa-mug-hot",        name: "Barista zuhause",        desc: "20 Kaffees nicht gekauft.",                    target: 20,  value: s => s.quick.kaffee },
-  { id: "commute",  icon: "fa-train",          name: "Pendel-Profi",           desc: "10-mal mit dem Zug gependelt.",                target: 10,  value: s => s.quick.zug },
-  { id: "mealprep", icon: "fa-utensils",       name: "Meal-Prep-Meister",      desc: "8-mal das Kita-Essen selbst vorbereitet.",     target: 8,   value: s => s.quick.mealprep },
-  { id: "hair",     icon: "fa-scissors",       name: "Selbst ist der Schnitt", desc: "3 Friseurbesuche gespart.",                    target: 3,   value: s => s.quick.haare },
-  { id: "allround", icon: "fa-shapes",         name: "Allrounder",             desc: "Verzichte in 5 verschiedenen Kategorien.",     target: 5,   value: s => s.categories },
-  { id: "bigfish",  icon: "fa-fish",           name: "Dicker Fisch",           desc: "Ein einzelner Verzicht ab 100 €.",             target: 100, value: s => s.maxSingle, money: true },
-  { id: "streak",   icon: "fa-fire",           name: "Dranbleiben",            desc: "4 Wochen in Folge mindestens ein Verzicht.",   target: 4,   value: s => s.streak },
-  { id: "team",     icon: "fa-user-group",     name: "Teamwork",               desc: "4 Wochen, in denen ihr beide verzichtet habt.", target: 4,  value: s => s.teamWeeks },
-  { id: "month500", icon: "fa-calendar-check", name: "Starker Monat",          desc: "500 € aktive Verzichte in einem Monat.",       target: 500, value: s => s.bestMonth, money: true },
-  { id: "year",     icon: "fa-tree",           name: "Jahresringe",            desc: "In 12 verschiedenen Monaten verzichtet.",      target: 12,  value: s => s.monthsActive },
+  { id: "first",    icon: "fa-seedling",       name: "Erster Schatten",        desc: "Den ersten bewussten Verzicht erfasst.",        target: 1,   value: s => s.count },
+  { id: "habit",    icon: "fa-repeat",         name: "Gewohnheitstier",        desc: "50 Verzichte erfasst.",                         target: 50,  value: s => s.count },
+  { id: "coffee",   icon: "fa-mug-hot",        name: "Barista zuhause",        desc: "20 Kaffees nicht gekauft.",                     target: 20,  value: s => s.quick.kaffee },
+  { id: "commute",  icon: "fa-train",          name: "Pendel-Profi",           desc: "10-mal mit dem Zug gependelt.",                 target: 10,  value: s => s.quick.zug },
+  { id: "mealprep", icon: "fa-utensils",       name: "Meal-Prep-Meister",      desc: "8-mal das Kita-Essen selbst vorbereitet.",      target: 8,   value: s => s.quick.mealprep },
+  { id: "hair",     icon: "fa-scissors",       name: "Selbst ist der Schnitt", desc: "3 Friseurbesuche gespart.",                     target: 3,   value: s => s.quick.haare },
+  { id: "allround", icon: "fa-shapes",         name: "Allrounder",             desc: "Verzichte in 5 verschiedenen Kategorien.",      target: 5,   value: s => s.categories },
+  { id: "bigfish",  icon: "fa-fish",           name: "Dicker Fisch",           desc: "Ein einzelner Eintrag ab 100 €.",               target: 100, value: s => s.maxSingle, money: true },
+  { id: "streak",   icon: "fa-fire",           name: "Dranbleiben",            desc: "4 Wochen in Folge mindestens ein Verzicht.",    target: 4,   value: s => s.streak },
+  { id: "team",     icon: "fa-user-group",     name: "Teamwork",               desc: "4 Wochen, in denen ihr beide verzichtet habt.", target: 4,   value: s => s.teamWeeks },
+  { id: "month500", icon: "fa-calendar-check", name: "Starker Monat",          desc: "500 € aktive Verzichte in einem Monat.",        target: 500, value: s => s.bestMonth, money: true },
+  { id: "year",     icon: "fa-tree",           name: "Jahresringe",            desc: "In 12 verschiedenen Monaten verzichtet.",       target: 12,  value: s => s.monthsActive },
 ];
 
 /* Manuelle Einträge zählen über diese Stichworte ebenfalls für die Quick-Action-Abzeichen */
@@ -112,12 +113,15 @@ const QUICK_MATCH = {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   2 · KONSTANTEN FÜR FILTER & ANSICHTEN
+   2 · KONSTANTEN
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const PERSONS = ["A", "B", "both"];
-const CAT_KEYS = Object.keys(CATEGORIES);
+const LEGACY_NAMES = { A: "Person A", B: "Person B" }; // alte Standardnamen werden automatisch ersetzt
 const PERSON_COLORS = { A: "#0E9F6E", B: "#0891b2", both: "#4A524D" };
+const PERSON_DARK = { A: "#087A54", B: "#0E7490", both: "#1B201D" };
+const CAT_KEYS = Object.keys(CATEGORIES);
+const TABS = ["tracker", "dashboard", "history"];
 const SOURCE_META = {
   recurring: { label: "Laufende Einsparungen", color: "#1B201D" },
   active:    { label: "Aktive Verzichte",      color: "#0E9F6E" },
@@ -133,11 +137,15 @@ const SPLITS = [["source", "Quelle"], ["category", "Kategorie"], ["person", "Per
 const DONUT_DIMS = [["category", "Kategorie"], ["item", "Posten"], ["person", "Person"], ["source", "Quelle"]];
 const VIEW_OPTIONS = { range: RANGES, source: SOURCES, value: VALUE_MODES, chartType: CHART_TYPES, interval: INTERVALS, split: SPLITS, donut: DONUT_DIMS };
 const MAX_BUCKETS = 400;
+const MAX_QTY = 50;
+const QUICK_DATE_MEMORY_MS = 10 * 60 * 1000; // gewähltes Nachtrage-Datum 10 Minuten merken
 
 const MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 const MONTHS_SHORT = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+const WEEKDAYS_LONG = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const DAY_MS = 864e5;
+const REDUCED_MOTION = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -198,11 +206,11 @@ function hexA(hex, alpha) {
 function joinDe(list) {
   return list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} und ${list[list.length - 1]}`;
 }
+function initialOf(name) { return (Array.from(String(name).trim())[0] || "?").toUpperCase(); }
 
-/* Datum: intern als Tageszahl (UTC-basiert, DST-sicher) */
+/* Datum: intern als Tageszahl (UTC-basiert, sommerzeitsicher) */
 function localDateStr(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 function todayStr() { return localDateStr(new Date()); }
-function isValidDateStr(s) { return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && Number.isFinite(toDn(s)); }
 function toDn(s) { const [y, m, d] = String(s).split("-").map(Number); return Math.round(Date.UTC(y, m - 1, d) / DAY_MS); }
 function dnOf(y, m, d = 1) { return Math.round(Date.UTC(y, m - 1, d) / DAY_MS); }
 function todayDn() { return toDn(todayStr()); }
@@ -211,9 +219,25 @@ function partsOf(n) {
   return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate(), wd: d.getUTCDay() };
 }
 function fromDn(n) { const p = partsOf(n); return `${p.y}-${pad(p.m)}-${pad(p.d)}`; }
+function isValidDateStr(s) {
+  if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const n = toDn(s);
+  return Number.isFinite(n) && fromDn(n) === s;
+}
 function mondayOf(n) { return n - ((partsOf(n).wd + 6) % 7); }
 function fmtDate(n) { const p = partsOf(n); return `${pad(p.d)}.${pad(p.m)}.${p.y}`; }
 function fmtDayShort(n) { const p = partsOf(n); return `${pad(p.d)}.${pad(p.m)}.`; }
+function fmtDateLong(n) {
+  const p = partsOf(n);
+  return `${WEEKDAYS_LONG[p.wd]}, ${p.d}. ${MONTHS[p.m - 1]}${p.y === partsOf(todayDn()).y ? "" : ` ${p.y}`}`;
+}
+function relDayLabel(dateStr) {
+  const diff = todayDn() - toDn(dateStr);
+  if (diff === 0) return "heute";
+  if (diff === 1) return "gestern";
+  if (diff === 2) return "vorgestern";
+  return `am ${fmtDateLong(toDn(dateStr))}`;
+}
 function isoWeek(n) {
   const d = new Date(n * DAY_MS);
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7) + 3); // Donnerstag dieser Woche
@@ -244,10 +268,18 @@ function accrue(monthly, from, to) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function cleanName(v, fallback) { return String(v ?? "").trim().slice(0, 24) || fallback; }
+function pickName(raw, p) {
+  const name = cleanName(raw, DEFAULT_NAMES[p]);
+  return name === LEGACY_NAMES[p] ? DEFAULT_NAMES[p] : name;
+}
+function hasLegacyNames(raw) {
+  return Boolean(raw?.names) && (raw.names.A === LEGACY_NAMES.A || raw.names.B === LEGACY_NAMES.B);
+}
+function clampQty(v) { return Math.min(999, Math.max(1, Math.round(Number(v) || 1))); }
 
 function defaultSettings() {
   return {
-    names: { A: "Person A", B: "Person B" },
+    names: { ...DEFAULT_NAMES },
     grossFactor: 2,
     hourlyWage: 0,
     monthlyGoal: 300,
@@ -261,7 +293,7 @@ function normalizeSettings(raw) {
   if (!raw || typeof raw !== "object") return d;
   const num = (v, fb, min, max) => { const n = Number(v); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fb; };
   return {
-    names: { A: cleanName(raw.names?.A, d.names.A), B: cleanName(raw.names?.B, d.names.B) },
+    names: { A: pickName(raw.names?.A, "A"), B: pickName(raw.names?.B, "B") },
     grossFactor: num(raw.grossFactor, 2, 1, 5),
     hourlyWage: num(raw.hourlyWage, 0, 0, 10000),
     monthlyGoal: num(raw.monthlyGoal, 300, 0, 1e6),
@@ -303,6 +335,7 @@ function normalizeEntry(raw) {
     id: String(raw.id),
     title: String(raw.title || "Ohne Titel").slice(0, 80),
     amount: amount > 0 ? amount : 0,
+    qty: clampQty(raw.qty),
     category: CATEGORIES[raw.category] ? raw.category : "sonstiges",
     date,
     dn: toDn(date),
@@ -313,7 +346,7 @@ function normalizeEntry(raw) {
 }
 
 function toStored(e) {
-  return { title: e.title, amount: e.amount, category: e.category, date: e.date, person: e.person, quickId: e.quickId ?? null, createdAt: e.createdAt || Date.now() };
+  return { title: e.title, amount: e.amount, qty: e.qty, category: e.category, date: e.date, person: e.person, quickId: e.quickId ?? null, createdAt: e.createdAt || Date.now() };
 }
 
 function byNewest(a, b) { return b.dn - a.dn || b.createdAt - a.createdAt; }
@@ -353,23 +386,33 @@ const state = {
   entriesLoaded: false,
   settingsLoaded: false,
   defaultsWritten: false,
+  namesMigrated: false,
   online: true,
   error: null,
-  tab: "tracker",
+  tab: null,
   person: PERSONS.includes(savedPerson) ? savedPerson : "both",
   view: loadView(),
-  ui: { filterOpen: false, chartConfigOpen: false, historyQuery: "" },
+  ui: { filterOpen: false, chartConfigOpen: false, historyQuery: "", freshBadges: new Set(), levelUp: false },
 };
+
+/* Entwurf der Schnellerfassung (Fenster „Wann, wie oft, wer?“) */
+const quickDraft = { qid: null, date: "", qty: 1, tile: null };
+let lastQuickDate = { date: null, at: 0 };
 
 let store = null;
 let settingsSaveTimer = null;
-let sheetHideTimer = null;
 let lastDay = todayStr();
 const charts = {};
+const sheetTimers = {};
 
 function saveView() { lsSet("sw.view", state.view); }
 function personName(p) { return p === "A" ? state.settings.names.A : p === "B" ? state.settings.names.B : "Gemeinsam"; }
+function whoLabel(p) { return p === "both" ? "gemeinsam" : `für ${personName(p)}`; }
 function nsKey(key) { return state.mode === "firebase" ? `sw.fb.${HOUSEHOLD_ID}.${key}` : `sw.local.${key}`; }
+function avatar(p, cls = "avatar-xs") {
+  const inner = p === "both" ? '<i class="fa-solid fa-user-group" style="font-size:.8em"></i>' : escapeHtml(initialOf(personName(p)));
+  return `<span class="${cls}" style="--pc:${PERSON_COLORS[p]};--pcd:${PERSON_DARK[p]}" aria-hidden="true">${inner}</span>`;
+}
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -690,7 +733,7 @@ function badgeStats() {
     months.set(mk, (months.get(mk) || 0) + e.amount);
     cats.add(e.category);
     maxSingle = Math.max(maxSingle, e.amount);
-    for (const key of Object.keys(quick)) if (matchesQuick(e, key)) quick[key] += 1;
+    for (const key of Object.keys(quick)) if (matchesQuick(e, key)) quick[key] += e.qty;
   }
   let streak = 0;
   let run = 0;
@@ -701,7 +744,7 @@ function badgeStats() {
     prev = w;
   }
   return {
-    count: list.length,
+    count: sum(list.map(e => e.qty)),
     quick,
     categories: cats.size,
     maxSingle,
@@ -722,7 +765,113 @@ function badgeList() {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   8 · RENDERING: Status, Hinweise, Tracker
+   8 · ANIMATIONEN: hochzählende Zahlen & wachsende Balken
+   Jeder animierte Wert hat einen Schlüssel. Ändert sich ein Wert, läuft die
+   Animation vom alten zum neuen Stand. Beim Öffnen eines Tabs starten die
+   Werte dieses Tabs bei null (Prefix „t.“ = Tracker, „d.“ = Dashboard).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const anim = { counts: new Map(), bars: new Map() };
+
+function countFormat(v, to, fmt) {
+  if (fmt === "int") return numDe(Math.round(v) || 0, 0);
+  const target = round2(to) || 0;
+  const whole = Math.abs(target) >= 1000 || Number.isInteger(target);
+  return (whole ? EUR_WHOLE : EUR_CENTS).format((whole ? Math.round(v) : round2(v)) || 0);
+}
+
+function countSpan(key, value, { fmt = "money", cls = "", ghost = false } = {}) {
+  const to = Number(value) || 0;
+  const prev = anim.counts.get(key);
+  const from = REDUCED_MOTION ? to : (prev ? prev.current : 0);
+  const text = escapeHtml(countFormat(from, to, fmt));
+  return `<span class="${cls}" data-count="${escapeHtml(key)}" data-to="${to}" data-fmt="${fmt}"${ghost ? ` data-ghost="${text}"` : ""}>${text}</span>`;
+}
+
+function barAttr(key, pct, extraStyle = "") {
+  const w = Math.max(0, Math.min(100, Number(pct) || 0));
+  const from = REDUCED_MOTION ? w : (anim.bars.has(key) ? anim.bars.get(key) : 0);
+  return `data-bar="${escapeHtml(key)}" data-w="${w}" style="width:${from}%;${extraStyle}"`;
+}
+
+function runBars(root) {
+  const els = $$("[data-bar]", root);
+  if (!els.length) return;
+  document.body.getBoundingClientRect(); // Startbreite festschreiben, damit die Übergänge laufen
+  for (const el of els) {
+    const w = Number(el.dataset.w) || 0;
+    el.style.width = `${w}%`;
+    anim.bars.set(el.dataset.bar, w);
+  }
+}
+
+function runCounts(root) {
+  for (const el of $$("[data-count]", root)) {
+    const key = el.dataset.count;
+    const to = Number(el.dataset.to) || 0;
+    const fmt = el.dataset.fmt || "money";
+    const prev = anim.counts.get(key);
+    if (prev?.raf) cancelAnimationFrame(prev.raf);
+    const from = REDUCED_MOTION ? to : (prev ? prev.current : 0);
+    const st = { current: from, raf: 0 };
+    anim.counts.set(key, st);
+    const write = v => {
+      const text = countFormat(v, to, fmt);
+      el.textContent = text;
+      if (el.hasAttribute("data-ghost")) el.setAttribute("data-ghost", text);
+    };
+    if (Math.abs(to - from) < 0.005) { st.current = to; write(to); continue; }
+    const duration = 950;
+    const t0 = performance.now();
+    const tick = now => {
+      const p = Math.min(1, (now - t0) / duration);
+      st.current = p < 1 ? from + (to - from) * (1 - Math.pow(1 - p, 4)) : to;
+      write(st.current);
+      st.raf = p < 1 ? requestAnimationFrame(tick) : 0;
+    };
+    st.raf = requestAnimationFrame(tick);
+  }
+}
+
+function runAnimations(root = document) {
+  runBars(root);
+  runCounts(root);
+}
+
+function resetAnim(prefix) {
+  for (const [key, st] of anim.counts) {
+    if (key.startsWith(prefix)) {
+      if (st.raf) cancelAnimationFrame(st.raf);
+      anim.counts.delete(key);
+    }
+  }
+  for (const key of [...anim.bars.keys()]) if (key.startsWith(prefix)) anim.bars.delete(key);
+}
+
+/* Diagramme: Balken wachsen beim Öffnen nacheinander von unten nach oben */
+function chartIntroAnimation(points) {
+  if (REDUCED_MOTION) return false;
+  const per = points > 1 ? Math.min(40, 650 / points) : 0;
+  return {
+    duration: 750,
+    easing: "easeOutQuart",
+    delay: ctx => (ctx.type === "data" && ctx.mode === "default" && !ctx.chart.$introDone
+      ? Math.round(ctx.dataIndex * per + ctx.datasetIndex * 80)
+      : 0),
+    onComplete: ev => { if (ev?.chart) ev.chart.$introDone = true; },
+  };
+}
+
+function destroyCharts() {
+  for (const key of Object.keys(charts)) {
+    charts[key].destroy();
+    delete charts[key];
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   9 · RENDERING: Status, Hinweise, Tracker, Personen
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function segButtons(items, current, attrs) {
@@ -736,7 +885,8 @@ function renderStatus() {
   if (state.mode === "local") { dot = "bg-amber-400"; label = "Demo"; }
   else if (state.error) { dot = "bg-rose-500"; label = "Fehler"; }
   else if (!state.online) { dot = "bg-zinc-400"; label = "Offline"; }
-  $("#syncStatus").innerHTML = `<span class="h-1.5 w-1.5 rounded-full ${dot}"></span>${label}`;
+  const live = label === "Live";
+  $("#syncStatus").innerHTML = `<span class="status-dot ${dot}${live ? " live" : ""}"></span>${label}`;
 }
 
 function renderBanner() {
@@ -763,7 +913,7 @@ function renderBanner() {
 
 function renderQuickActions() {
   $("#quickActions").innerHTML = QUICK_ACTIONS.map(q => `
-    <button type="button" data-action="quick" data-id="${q.id}"
+    <button type="button" data-action="quick" data-id="${q.id}" aria-haspopup="dialog"
       class="qa relative overflow-hidden rounded-[1.25rem] border border-mist bg-white p-4 text-left shadow-soft transition hover:border-jade-300 active:scale-[0.97]">
       <span class="flex items-start justify-between">
         <span class="grid h-12 w-12 place-items-center rounded-2xl bg-jade-50 text-2xl" aria-hidden="true">${q.emoji}</span>
@@ -776,6 +926,24 @@ function renderQuickActions() {
     </button>`).join("");
 }
 
+/* Aufteilung nach Person als animierter Balken (Matze links, Pia rechts, gemeinsam in der Mitte) */
+function personSplitHtml(prefix, sums, { factor = 1, legend = true } = {}) {
+  const total = sums.A + sums.B + sums.both;
+  if (!(total > 0)) return "";
+  return `
+    <div class="mt-4">
+      <div class="flex h-2 overflow-hidden rounded-full bg-paper">
+        ${["A", "both", "B"].map(p => `<div class="bar h-full" ${barAttr(`${prefix}.${p}`, (sums[p] / total) * 100, `background:${PERSON_COLORS[p]}`)}></div>`).join("")}
+      </div>
+      ${legend ? `
+        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-mute">
+          ${PERSONS.filter(p => sums[p] > 0).map(p => `
+            <span class="inline-flex items-center gap-1.5">${avatar(p)}${escapeHtml(personName(p))}
+              <b class="font-semibold text-ink tabular">${money(sums[p] * factor)}</b></span>`).join("")}
+        </div>` : ""}
+    </div>`;
+}
+
 function renderTracker() {
   const s = state.settings;
   const f = s.grossFactor;
@@ -784,12 +952,15 @@ function renderTracker() {
   const monthStart = dnOf(y, m, 1);
   const monthEntries = state.entries.filter(e => e.amount > 0 && e.dn >= monthStart && e.dn <= t);
   const monthSum = sum(monthEntries.map(e => e.amount));
-  const todayCount = state.entries.filter(e => e.dn === t).length;
+  const todayCount = sum(state.entries.filter(e => e.dn === t).map(e => e.qty));
   const goal = s.monthlyGoal;
   const pct = goal > 0 ? Math.min(100, (monthSum / goal) * 100) : 0;
   const recurringMonthly = sum(activeRecurring().map(r => r.amount));
+  const byPerson = { A: 0, B: 0, both: 0 };
+  for (const e of monthEntries) byPerson[e.person] += e.amount;
 
-  $("#trackerSummary").innerHTML = `
+  const root = $("#trackerSummary");
+  root.innerHTML = `
     <div class="rounded-[1.5rem] border border-mist bg-white p-5 shadow-soft">
       <div class="flex items-center justify-between gap-3">
         <p class="text-sm font-medium text-ink-soft">${MONTHS[m - 1]} ${y}</p>
@@ -797,8 +968,8 @@ function renderTracker() {
           <i class="fa-solid fa-bolt text-[10px]"></i>${todayCount === 0 ? "Heute noch nichts" : `Heute ${todayCount}-mal verzichtet`}
         </span>
       </div>
-      <p class="mt-3 text-[2.5rem] font-semibold leading-none tracking-tight tabular shadow-mini">${money(monthSum)}</p>
-      <p class="mt-2 text-sm text-ink-mute">aktiv gespart, entspricht <span class="font-medium text-ink tabular">${money(monthSum * f)}</span> brutto</p>
+      <p class="mt-3 text-[2.5rem] font-semibold leading-none tracking-tight tabular shadow-mini">${countSpan("t.month", monthSum)}</p>
+      <p class="mt-2 text-sm text-ink-mute">aktiv gespart, entspricht ${countSpan("t.monthGross", monthSum * f, { cls: "font-medium text-ink tabular" })} brutto</p>
       ${goal > 0 ? `
         <div class="mt-5">
           <div class="mb-1.5 flex justify-between text-xs text-ink-mute">
@@ -808,9 +979,10 @@ function renderTracker() {
             <span class="tabular">${money(goal)}</span>
           </div>
           <div class="h-2 overflow-hidden rounded-full bg-paper">
-            <div class="h-full rounded-full bg-jade-500 transition-all duration-500" style="width:${pct}%"></div>
+            <div class="bar h-full rounded-full bg-jade-500" ${barAttr("t.goal", pct)}></div>
           </div>
         </div>` : ""}
+      ${monthSum > 0 ? personSplitHtml("t.split", byPerson) : ""}
       <div class="mt-5 flex items-center gap-2 border-t border-mist pt-4 text-xs text-ink-mute">
         <i class="fa-solid fa-arrows-rotate text-jade-600"></i>
         <span>Zusätzlich laufen <b class="font-semibold text-ink tabular">${money(recurringMonthly)}</b> pro Monat automatisch mit.</span>
@@ -818,10 +990,10 @@ function renderTracker() {
       </div>
     </div>`;
 
-  $("#personSwitch").innerHTML = segButtons(PERSONS.map(p => [p, personName(p)]), state.person, v => `data-action="person" data-value="${v}"`);
+  renderPersonSwitch();
 
   const counts = {};
-  for (const e of monthEntries) if (e.quickId) counts[e.quickId] = (counts[e.quickId] || 0) + 1;
+  for (const e of monthEntries) if (e.quickId) counts[e.quickId] = (counts[e.quickId] || 0) + e.qty;
   for (const q of QUICK_ACTIONS) {
     const c = $(`[data-qa-count="${q.id}"]`);
     const g = $(`[data-qa-gross="${q.id}"]`);
@@ -836,12 +1008,47 @@ function renderTracker() {
     if (!seen.has(key)) { seen.add(key); titles.push(e.title); }
     if (titles.length >= 15) break;
   }
-  $("#titleSuggestions").innerHTML = titles.map(t => `<option value="${escapeHtml(t)}"></option>`).join("");
+  $("#titleSuggestions").innerHTML = titles.map(t2 => `<option value="${escapeHtml(t2)}"></option>`).join("");
+
+  runAnimations(root);
+}
+
+/* Der Umschalter wird nur neu gebaut, wenn sich Namen ändern – so kann die Markierung gleiten */
+function renderPersonSwitch() {
+  const track = $("#personSwitch");
+  const signature = PERSONS.map(personName).join("|");
+  if (track.dataset.sig !== signature) {
+    track.dataset.sig = signature;
+    $$(".person-btn", track).forEach(b => b.remove());
+    track.insertAdjacentHTML("beforeend", PERSONS.map(p => `
+      <button type="button" class="person-btn" data-action="person" data-value="${p}" style="--pcd:${PERSON_DARK[p]}">
+        <span class="person-avatar" aria-hidden="true">${p === "both" ? '<i class="fa-solid fa-user-group text-[11px]"></i>' : escapeHtml(initialOf(personName(p)))}</span>
+        <span class="truncate">${escapeHtml(personName(p))}</span>
+      </button>`).join(""));
+  }
+  updatePersonSwitch();
+}
+
+function updatePersonSwitch() {
+  const track = $("#personSwitch");
+  $$(".person-btn", track).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.value === state.person)));
+  const thumb = $(".person-thumb", track);
+  thumb.style.transform = `translateX(calc(${PERSONS.indexOf(state.person)} * (100% + 4px)))`;
+  thumb.style.backgroundColor = PERSON_DARK[state.person];
+  const who = $("#formWho");
+  if (who) who.textContent = state.person === "both" ? "gemeinsam speichern" : `für ${personName(state.person)} speichern`;
+}
+
+function setPerson(p) {
+  if (!PERSONS.includes(p)) return;
+  state.person = p;
+  lsSet("sw.person", p);
+  updatePersonSwitch();
 }
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   9 · RENDERING: Dashboard
+   10 · RENDERING: Dashboard
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function renderDashboard() {
@@ -852,8 +1059,10 @@ function renderDashboard() {
   renderLevel();
   renderHistoryChart(d);
   renderDistribution(d);
+  renderPersonCard(d);
   renderRecurringCard();
   renderBadges();
+  runAnimations($('[data-tab-panel="dashboard"]'));
 }
 
 function activeFilterCount() {
@@ -909,7 +1118,7 @@ function renderFilterBar() {
         <div>
           <p class="text-sm font-medium">Personen</p>
           <div class="mt-2 flex flex-wrap gap-1.5">
-            ${PERSONS.map(p => `<button type="button" class="chip" data-action="toggle-person" data-value="${p}" aria-pressed="${v.persons.includes(p)}">${escapeHtml(personName(p))}</button>`).join("")}
+            ${PERSONS.map(p => `<button type="button" class="chip" data-action="toggle-person" data-value="${p}" aria-pressed="${v.persons.includes(p)}">${avatar(p)}${escapeHtml(personName(p))}</button>`).join("")}
           </div>
           <p class="mt-2 text-xs text-ink-mute">Laufende Einsparungen zählen als „Gemeinsam“.</p>
         </div>
@@ -922,11 +1131,11 @@ function renderFilterBar() {
   if (next) next.scrollLeft = scrollLeft;
 }
 
-function miniStat(label, value, hint) {
+function miniStat(label, valueHtml, hint) {
   return `
     <div class="rounded-2xl border border-mist bg-white px-3 py-3">
       <p class="text-xs text-ink-mute">${label}</p>
-      <p class="mt-1 truncate text-base font-semibold tracking-tight tabular">${value}</p>
+      <p class="mt-1 truncate text-base font-semibold tracking-tight tabular">${valueHtml}</p>
       <p class="text-[11px] text-ink-mute">${hint}</p>
     </div>`;
 }
@@ -936,9 +1145,11 @@ function renderKpis(d) {
   const f = s.grossFactor;
   const tax = Math.round((1 - 1 / f) * 100);
   const activeShare = d.net > 0 ? (d.activeSum / d.net) * 100 : 0;
+  const recurringShare = d.net > 0 ? 100 - activeShare : 0;
   const months = Math.max(1, (d.range.end - d.range.start + 1) / 30.4375);
   const recurringMonthly = sum(d.recurring.map(r => r.amount));
   const hours = s.hourlyWage > 0 ? d.gross / s.hourlyWage : 0;
+  const count = sum(d.entries.map(e => e.qty));
 
   $("#kpiArea").innerHTML = `
     <div class="mt-4 flex items-center justify-between gap-3">
@@ -949,52 +1160,52 @@ function renderKpis(d) {
     <article class="mt-3 overflow-hidden rounded-[1.75rem] border border-mist bg-white shadow-soft">
       <div class="p-5 pb-6">
         <p class="text-sm font-medium text-ink-soft">Netto-Ersparnis</p>
-        <p class="mt-3 text-[2.75rem] font-semibold tracking-tight tabular sm:text-[3.25rem]">
-          <span class="shadow-figure"><span class="ghost" aria-hidden="true">${money(d.net)}</span><span class="main">${money(d.net)}</span></span>
-        </p>
+        <p class="mt-3 text-[2.75rem] font-semibold tracking-tight tabular sm:text-[3.25rem]">${countSpan("d.net", d.net, { cls: "shadow-figure", ghost: true })}</p>
         <div class="mt-5 flex h-2 overflow-hidden rounded-full bg-paper">
-          <div class="h-full bg-jade-500" style="width:${activeShare}%"></div>
-          <div class="h-full bg-ink" style="width:${d.net > 0 ? 100 - activeShare : 0}%"></div>
+          <div class="bar h-full bg-jade-500" ${barAttr("d.split.active", activeShare)}></div>
+          <div class="bar h-full bg-ink" ${barAttr("d.split.recurring", recurringShare)}></div>
         </div>
         <div class="mt-2 flex flex-wrap justify-between gap-2 text-xs text-ink-mute">
-          <span><span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-jade-500"></span>Aktive Verzichte <b class="font-semibold text-ink tabular">${money(d.activeSum)}</b></span>
-          <span><span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-ink"></span>Laufend <b class="font-semibold text-ink tabular">${money(d.recurringSum)}</b></span>
+          <span><span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-jade-500"></span>Aktive Verzichte ${countSpan("d.activeSum", d.activeSum, { cls: "font-semibold text-ink tabular" })}</span>
+          <span><span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-ink"></span>Laufend ${countSpan("d.recurringSum", d.recurringSum, { cls: "font-semibold text-ink tabular" })}</span>
         </div>
       </div>
-      <div class="relative bg-ink p-5 text-white">
+      <div class="bg-ink p-5 text-white">
         <div class="flex flex-wrap items-baseline justify-between gap-2">
           <p class="text-sm font-medium text-jade-300">Brutto-Äquivalenz</p>
           <p class="text-xs text-white/60 tabular">Faktor ${numDe(f, 2)} bei rund ${tax} % Abgaben</p>
         </div>
-        <p class="mt-2 text-[2.25rem] font-semibold leading-none tracking-tight text-jade-300 tabular">${money(d.gross)}</p>
+        <p class="mt-2 text-[2.25rem] font-semibold leading-none tracking-tight text-jade-300 tabular">${countSpan("d.gross", d.gross)}</p>
         <p class="mt-3 max-w-[60ch] text-sm leading-relaxed text-white/75">Um das gleiche Geld für Konsum auszugeben, müsste jemand diesen Betrag brutto mehr verdienen.</p>
-        ${hours > 0 ? `<p class="mt-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white/85"><i class="fa-solid fa-hourglass-half text-jade-300"></i>Das sind etwa ${numDe(hours, 0)} Arbeitsstunden</p>` : ""}
+        ${hours > 0 ? `<p class="mt-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-white/85"><i class="fa-solid fa-hourglass-half text-jade-300"></i>Das sind etwa ${countSpan("d.hours", hours, { fmt: "int" })} Arbeitsstunden</p>` : ""}
       </div>
     </article>
 
     <div class="mt-3 grid grid-cols-3 gap-3">
-      ${miniStat("Verzichte", numDe(d.entries.length, 0), "im Zeitraum")}
-      ${miniStat("Ø pro Monat", money(d.net / months), "netto")}
-      ${miniStat("Laufend", money(recurringMonthly), "pro Monat")}
+      ${miniStat("Verzichte", countSpan("d.count", count, { fmt: "int" }), "im Zeitraum")}
+      ${miniStat("Ø pro Monat", countSpan("d.avg", d.net / months), "netto")}
+      ${miniStat("Laufend", countSpan("d.recurringMonthly", recurringMonthly), "pro Monat")}
     </div>`;
 }
 
 function renderLevel() {
   const total = allTimeNet();
   const L = levelInfo(total);
+  const pop = state.ui.levelUp;
+  state.ui.levelUp = false;
   $("#levelCard").innerHTML = `
     <div class="flex items-center gap-4 rounded-[1.25rem] border border-mist bg-white p-4 shadow-soft">
-      <div class="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-ink text-jade-300">
+      <div class="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-ink text-jade-300${pop ? " badge-pop" : ""}">
         <i class="fa-solid ${L.cur.icon} text-xl"></i>
         <span class="absolute -bottom-1.5 -right-1.5 grid h-6 min-w-[1.5rem] place-items-center rounded-full bg-jade-500 px-1 text-[11px] font-bold text-white ring-2 ring-white">${L.idx + 1}</span>
       </div>
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline justify-between gap-2">
           <p class="truncate text-sm font-semibold">Stufe ${L.idx + 1}: ${L.cur.name}</p>
-          <p class="shrink-0 text-xs text-ink-mute tabular">${money(total)} gesamt</p>
+          <p class="shrink-0 text-xs text-ink-mute tabular">${countSpan("d.levelTotal", total)} gesamt</p>
         </div>
         <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-paper">
-          <div class="h-full rounded-full bg-jade-500" style="width:${L.progress * 100}%"></div>
+          <div class="bar h-full rounded-full bg-jade-500" ${barAttr("d.level", L.progress * 100)}></div>
         </div>
         <p class="mt-1.5 text-xs text-ink-mute">${L.next
           ? `Noch <b class="font-medium text-ink tabular">${money(L.remaining)}</b> bis „${L.next.name}“`
@@ -1066,7 +1277,7 @@ function renderHistoryChart(d) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 450 },
+      animation: chartIntroAnimation(ts.labels.length),
       interaction: { mode: "index", intersect: false },
       plugins: {
         legend: { display: stacked, position: "bottom", labels: { usePointStyle: true, pointStyle: "circle", boxWidth: 7, boxHeight: 7, padding: 14, font: { size: 11 } } },
@@ -1093,11 +1304,12 @@ function renderDistribution(d) {
   const isGross = state.view.value === "gross";
   const f = isGross ? grossFactor() : 1;
   const total = sum(items.map(i => i.value));
+  const dim = state.view.donut;
 
-  $("#donutDims").innerHTML = segButtons(DONUT_DIMS, state.view.donut, v => `data-action="view" data-key="donut" data-value="${v}"`);
+  $("#donutDims").innerHTML = segButtons(DONUT_DIMS, dim, v => `data-action="view" data-key="donut" data-value="${v}"`);
   $("#donutCenter").innerHTML = `
     <p class="text-xs text-ink-mute">${isGross ? "Brutto" : "Netto"}</p>
-    <p class="text-lg font-semibold tracking-tight tabular">${money(total * f)}</p>`;
+    <p class="text-lg font-semibold tracking-tight tabular">${countSpan("d.donutTotal", total * f)}</p>`;
   $("#donutLegend").innerHTML = items.length
     ? items.map(it => {
         const pct = total ? (it.value / total) * 100 : 0;
@@ -1110,7 +1322,7 @@ function renderDistribution(d) {
               <span class="w-[5.5rem] text-right font-medium tabular">${money(it.value * f)}</span>
             </div>
             <div class="ml-[1.125rem] mt-1.5 h-1 overflow-hidden rounded-full bg-paper">
-              <div class="h-full rounded-full" style="width:${pct}%;background:${it.color}"></div>
+              <div class="bar h-full rounded-full" ${barAttr(`d.lg.${dim}.${it.key}`, pct, `background:${it.color}`)}></div>
             </div>
           </li>`;
       }).join("")
@@ -1131,7 +1343,7 @@ function renderDistribution(d) {
       responsive: true,
       maintainAspectRatio: false,
       cutout: "74%",
-      animation: { duration: 450 },
+      animation: REDUCED_MOTION ? false : { animateRotate: true, animateScale: false, duration: 950, easing: "easeOutQuart" },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -1141,6 +1353,38 @@ function renderDistribution(d) {
       },
     },
   });
+}
+
+function renderPersonCard(d) {
+  const f = state.view.value === "gross" ? grossFactor() : 1;
+  const sums = { A: 0, B: 0, both: 0 };
+  const counts = { A: 0, B: 0, both: 0 };
+  for (const e of d.entries) { sums[e.person] += e.amount; counts[e.person] += e.qty; }
+  const total = sums.A + sums.B + sums.both;
+
+  const tile = p => `
+    <div class="min-w-0 rounded-2xl bg-paper p-3">
+      <div class="flex items-center gap-2">${avatar(p, "avatar-md")}<span class="truncate text-sm font-medium">${escapeHtml(personName(p))}</span></div>
+      <p class="mt-2 text-xl font-semibold tracking-tight tabular">${countSpan(`d.person.${p}`, sums[p] * f)}</p>
+      <p class="text-xs text-ink-mute tabular">${counts[p]} ${counts[p] === 1 ? "Verzicht" : "Verzichte"}</p>
+    </div>`;
+
+  let body;
+  if (state.view.source === "recurring") {
+    body = `<p class="mt-4 text-sm text-ink-mute">Laufende Einsparungen gehören euch beiden. Wähle im Filter „Alles“ oder „Nur aktiv“, um die Aufteilung zu sehen.</p>`;
+  } else if (!(total > 0)) {
+    body = `<p class="mt-4 text-sm text-ink-mute">Keine aktiven Verzichte für diese Auswahl.</p>`;
+  } else {
+    body = `
+      <div class="mt-4 grid grid-cols-2 gap-2">${tile("A")}${tile("B")}</div>
+      ${personSplitHtml("d.personSplit", sums, { legend: false })}
+      ${sums.both > 0 ? `<p class="mt-2 flex items-center gap-1.5 text-xs text-ink-mute">${avatar("both")}Gemeinsam <b class="font-semibold text-ink tabular">${money(sums.both * f)}</b>, ${counts.both} ${counts.both === 1 ? "Verzicht" : "Verzichte"}</p>` : ""}`;
+  }
+
+  $("#personCard").innerHTML = `
+    <h3 class="text-sm font-semibold">Wer hat verzichtet?</h3>
+    <p class="mt-0.5 text-xs text-ink-mute">Aktive Verzichte im gewählten Zeitraum, ${state.view.value === "gross" ? "brutto" : "netto"}</p>
+    ${body}`;
 }
 
 function renderRecurringCard() {
@@ -1160,13 +1404,13 @@ function renderRecurringCard() {
       <button type="button" class="btn-quiet shrink-0" data-action="open-settings" data-section="settings-recurring"><i class="fa-solid fa-pen text-xs"></i> Bearbeiten</button>
     </div>
     <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-      <div class="rounded-2xl bg-paper px-2 py-3"><p class="text-xs text-ink-mute">pro Monat</p><p class="mt-0.5 font-semibold tabular">${money(monthly)}</p></div>
-      <div class="rounded-2xl bg-paper px-2 py-3"><p class="text-xs text-ink-mute">pro Jahr</p><p class="mt-0.5 font-semibold tabular">${money(monthly * 12)}</p></div>
-      <div class="rounded-2xl bg-jade-50 px-2 py-3"><p class="text-xs text-jade-700">brutto / Jahr</p><p class="mt-0.5 font-semibold text-jade-700 tabular">${money(monthly * 12 * f)}</p></div>
+      <div class="rounded-2xl bg-paper px-2 py-3"><p class="text-xs text-ink-mute">pro Monat</p><p class="mt-0.5 font-semibold tabular">${countSpan("d.rec.month", monthly)}</p></div>
+      <div class="rounded-2xl bg-paper px-2 py-3"><p class="text-xs text-ink-mute">pro Jahr</p><p class="mt-0.5 font-semibold tabular">${countSpan("d.rec.year", monthly * 12)}</p></div>
+      <div class="rounded-2xl bg-jade-50 px-2 py-3"><p class="text-xs text-jade-700">brutto / Jahr</p><p class="mt-0.5 font-semibold text-jade-700 tabular">${countSpan("d.rec.gross", monthly * 12 * f)}</p></div>
     </div>
     ${monthly > 0 ? `
       <div class="mt-4 flex h-2.5 gap-px overflow-hidden rounded-full bg-paper">
-        ${active.map(r => `<div title="${escapeHtml(r.label)}: ${money(r.amount)}" style="width:${(r.amount / monthly) * 100}%;background:${CATEGORIES[r.category].color}"></div>`).join("")}
+        ${active.map(r => `<div class="bar h-full" title="${escapeHtml(r.label)}: ${money(r.amount)}" ${barAttr(`d.rec.seg.${r.id}`, (r.amount / monthly) * 100, `background:${CATEGORIES[r.category].color}`)}></div>`).join("")}
       </div>
       <ul class="mt-3 space-y-1.5">
         ${top.map(r => `
@@ -1183,6 +1427,7 @@ function renderRecurringCard() {
 function renderBadges() {
   const list = badgeList();
   const done = list.filter(b => b.done).length;
+  const fresh = state.ui.freshBadges;
   $("#badgesCard").innerHTML = `
     <div class="flex items-start justify-between gap-3">
       <div>
@@ -1194,16 +1439,17 @@ function renderBadges() {
     <div class="mt-4 grid grid-cols-4 gap-1">
       ${list.map(b => `
         <button type="button" data-action="badge" data-id="${b.id}" class="flex flex-col items-center gap-1.5 rounded-2xl p-2 text-center transition hover:bg-paper" aria-label="${escapeHtml(b.name)}${b.done ? " (freigeschaltet)" : ""}">
-          <span class="grid h-12 w-12 place-items-center rounded-full ${b.done ? "badge-on bg-jade-500 text-white" : "bg-paper text-[#C3CBC6]"}"><i class="fa-solid ${b.icon}"></i></span>
+          <span class="grid h-12 w-12 place-items-center rounded-full ${b.done ? "badge-on bg-jade-500 text-white" : "bg-paper text-[#C3CBC6]"}${fresh.has(b.id) ? " badge-pop" : ""}"><i class="fa-solid ${b.icon}"></i></span>
           <span class="text-[11px] font-medium leading-tight ${b.done ? "text-ink" : "text-ink-mute"}">${escapeHtml(b.name)}</span>
-          ${b.done ? "" : `<span class="block h-1 w-9 overflow-hidden rounded-full bg-paper"><span class="block h-full rounded-full bg-jade-400" style="width:${b.pct}%"></span></span>`}
+          ${b.done ? "" : `<span class="block h-1 w-9 overflow-hidden rounded-full bg-paper"><span class="bar block h-full rounded-full bg-jade-400" ${barAttr(`d.badge.${b.id}`, b.pct)}></span></span>`}
         </button>`).join("")}
     </div>`;
+  fresh.clear();
 }
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   10 · RENDERING: Historie
+   11 · RENDERING: Historie
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function entryRow(e) {
@@ -1213,8 +1459,12 @@ function entryRow(e) {
     <li class="flex items-center gap-3 rounded-2xl border border-mist bg-white px-3 py-2.5">
       <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style="background:${hexA(c.color, 0.12)};color:${c.color}"><i class="fa-solid ${c.icon} text-sm"></i></span>
       <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-medium">${escapeHtml(e.title)}</p>
-        <p class="truncate text-xs text-ink-mute">${WEEKDAYS[p.wd]}., ${pad(p.d)}.${pad(p.m)}. · ${escapeHtml(personName(e.person))}${e.quickId ? ` · <i class="fa-solid fa-bolt text-[10px] text-jade-500" title="Quick Action"></i>` : ""}</p>
+        <p class="truncate text-sm font-medium">${escapeHtml(e.title)}${e.qty > 1 ? ` <span class="font-normal text-ink-mute">×${e.qty}</span>` : ""}</p>
+        <p class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-ink-mute">
+          <span class="shrink-0">${WEEKDAYS[p.wd]}., ${pad(p.d)}.${pad(p.m)}.</span>
+          ${avatar(e.person)}<span class="truncate">${escapeHtml(personName(e.person))}</span>
+          ${e.quickId ? `<i class="fa-solid fa-bolt shrink-0 text-[10px] text-jade-500" title="Schnellerfassung"></i>` : ""}
+        </p>
       </div>
       <div class="shrink-0 text-right">
         <p class="text-sm font-semibold text-jade-700 tabular">+${moneyExact(e.amount)}</p>
@@ -1265,7 +1515,7 @@ function renderHistory() {
       <section>
         <div class="sticky z-10 -mx-4 flex items-baseline justify-between bg-paper/90 px-4 py-2 backdrop-blur" style="top: calc(3.5rem + env(safe-area-inset-top));">
           <h3 class="text-sm font-semibold">${MONTHS[m - 1]} ${y}</h3>
-          <p class="text-xs text-ink-mute tabular">${g.items.length}× <b class="ml-1 font-semibold text-ink">${money(sum(g.items.map(e => e.amount)))}</b></p>
+          <p class="text-xs text-ink-mute tabular">${sum(g.items.map(e => e.qty))}× <b class="ml-1 font-semibold text-ink">${money(sum(g.items.map(e => e.amount)))}</b></p>
         </div>
         <ul class="mt-1 space-y-2">${g.items.map(entryRow).join("")}</ul>
       </section>`;
@@ -1274,9 +1524,170 @@ function renderHistory() {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   11 · EINSTELLUNGEN (Bottom Sheet)
+   12 · FENSTER (Bottom Sheets): Schnellerfassung & Einstellungen
    ═══════════════════════════════════════════════════════════════════════════ */
 
+function isSheetOpen(id) {
+  const el = document.getElementById(id);
+  return Boolean(el) && !el.classList.contains("hidden") && el.dataset.state !== "closing";
+}
+
+function openSheet(id) {
+  const sheet = document.getElementById(id);
+  clearTimeout(sheetTimers[id]);
+  sheet.dataset.state = "open";
+  sheet.classList.remove("hidden");
+  document.documentElement.classList.add("overflow-hidden");
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (sheet.dataset.state !== "open") return;
+    $(".backdrop", sheet).classList.add("open");
+    $(".sheet", sheet).classList.add("open");
+  }));
+}
+
+function closeSheet(id) {
+  if (!isSheetOpen(id)) return;
+  const sheet = document.getElementById(id);
+  if (sheet.contains(document.activeElement)) document.activeElement.blur(); // löst offene „change“-Events aus
+  sheet.dataset.state = "closing";
+  $(".backdrop", sheet).classList.remove("open");
+  $(".sheet", sheet).classList.remove("open");
+  if (!["quickSheet", "settingsSheet"].some(other => other !== id && isSheetOpen(other))) {
+    document.documentElement.classList.remove("overflow-hidden");
+  }
+  sheetTimers[id] = setTimeout(() => {
+    sheet.classList.add("hidden");
+    sheet.dataset.state = "closed";
+  }, 340);
+}
+
+/* ── Schnellerfassung ── */
+function currentQuick() { return QUICK_ACTIONS.find(x => x.id === quickDraft.qid) || null; }
+
+function openQuick(id, tile) {
+  if (!QUICK_ACTIONS.some(x => x.id === id)) return;
+  const remembered = lastQuickDate.date && Date.now() - lastQuickDate.at < QUICK_DATE_MEMORY_MS && lastQuickDate.date <= todayStr();
+  Object.assign(quickDraft, { qid: id, qty: 1, tile, date: remembered ? lastQuickDate.date : todayStr() });
+  renderQuickSheet();
+  openSheet("quickSheet");
+  setTimeout(() => { if (isSheetOpen("quickSheet")) $("#quickSave")?.focus({ preventScroll: true }); }, 360);
+}
+
+function renderQuickSheet() {
+  const q = currentQuick();
+  if (!q) return;
+  const t = todayDn();
+  $("#quickBody").innerHTML = `
+    <form id="quickForm" novalidate>
+      <div class="flex items-center gap-4">
+        <span class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-jade-50 text-3xl" aria-hidden="true">${q.emoji}</span>
+        <div class="min-w-0 flex-1">
+          <h2 id="quickTitle" class="truncate text-lg font-semibold">${escapeHtml(q.title)}</h2>
+          <p class="text-sm text-ink-mute tabular">${money(q.amount)} je Verzicht, ${money(q.amount * grossFactor())} brutto</p>
+        </div>
+        <button type="button" data-action="close-sheet" data-sheet="quickSheet" class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-paper text-ink-soft" aria-label="Schließen">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <fieldset class="mt-6">
+        <legend class="text-sm font-semibold">Wann?</legend>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+          ${["Heute", "Gestern", "Vorgestern"].map((label, off) => `
+            <button type="button" class="chip chip-range justify-center" data-action="quick-date" data-value="${fromDn(t - off)}">${label}</button>`).join("")}
+        </div>
+        <label class="relative mt-2 block">
+          <span class="sr-only">Anderes Datum wählen</span>
+          <i class="fa-regular fa-calendar pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-ink-mute"></i>
+          <input id="quickDate" type="date" class="input pl-10" max="${fromDn(t)}" value="${quickDraft.date}">
+        </label>
+      </fieldset>
+
+      <div class="mt-5 flex items-center justify-between gap-3">
+        <p id="qtyLabel" class="text-sm font-semibold">Wie oft?</p>
+        <div class="flex items-center gap-1 rounded-full bg-paper p-1" role="group" aria-labelledby="qtyLabel">
+          <button type="button" class="stepper" data-action="quick-qty" data-value="-1" aria-label="Einmal weniger"><i class="fa-solid fa-minus"></i></button>
+          <output id="quickQty" class="w-10 text-center text-base font-semibold tabular" aria-live="polite">1</output>
+          <button type="button" class="stepper" data-action="quick-qty" data-value="1" aria-label="Einmal mehr"><i class="fa-solid fa-plus"></i></button>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <p class="text-sm font-semibold">Wer?</p>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+          ${PERSONS.map(p => `
+            <button type="button" class="chip chip-person min-w-0 justify-center" data-action="quick-person" data-value="${p}" style="--pc:${PERSON_COLORS[p]};--pcd:${PERSON_DARK[p]}">
+              ${avatar(p)}<span class="truncate">${escapeHtml(personName(p))}</span>
+            </button>`).join("")}
+        </div>
+      </div>
+
+      <p id="quickSummary" class="mt-6 text-center text-sm text-ink-soft"></p>
+      <button id="quickSave" type="submit" class="btn-primary mt-3 w-full"></button>
+    </form>`;
+  updateQuickSheet();
+}
+
+/* Aktualisiert nur die veränderlichen Teile – so bleibt das Datumsfeld beim Tippen bedienbar */
+function updateQuickSheet() {
+  const q = currentQuick();
+  const body = $("#quickBody");
+  if (!q || !$("#quickForm", body)) return;
+  const date = quickDraft.date;
+  const valid = isValidDateStr(date) && date <= todayStr();
+
+  $$("[data-action='quick-date']", body).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.value === date)));
+  const input = $("#quickDate", body);
+  if (input && document.activeElement !== input && input.value !== date) input.value = date;
+  $$("[data-action='quick-person']", body).forEach(b => b.setAttribute("aria-pressed", String(b.dataset.value === state.person)));
+  $("#quickQty", body).textContent = String(quickDraft.qty);
+  $("[data-action='quick-qty'][data-value='-1']", body).disabled = quickDraft.qty <= 1;
+  $("[data-action='quick-qty'][data-value='1']", body).disabled = quickDraft.qty >= MAX_QTY;
+
+  const total = q.amount * quickDraft.qty;
+  const what = `${quickDraft.qty > 1 ? `${quickDraft.qty}× ` : ""}${q.title}`;
+  $("#quickSummary", body).innerHTML = valid
+    ? `<b class="font-semibold text-ink">${escapeHtml(what)}</b>, ${escapeHtml(relDayLabel(date))}, ${escapeHtml(whoLabel(state.person))}`
+    : `<span class="text-rose-600">Wähle ein Datum, das nicht in der Zukunft liegt.</span>`;
+  const save = $("#quickSave", body);
+  save.disabled = !valid;
+  save.innerHTML = `<i class="fa-solid fa-check"></i> ${money(total)} speichern`;
+}
+
+function saveQuick() {
+  const q = currentQuick();
+  if (!q || !isSheetOpen("quickSheet")) return;
+  const date = quickDraft.date;
+  if (!isValidDateStr(date) || date > todayStr()) { updateQuickSheet(); return; }
+  const qty = quickDraft.qty;
+  addEntry({ title: q.title, amount: q.amount * qty, qty, category: q.category, date, person: state.person, quickId: q.id });
+  lastQuickDate = date === todayStr() ? { date: null, at: 0 } : { date, at: Date.now() };
+  const tile = quickDraft.tile;
+  closeSheet("quickSheet");
+  if (tile && document.body.contains(tile)) tile.focus({ preventScroll: true });
+  setTimeout(() => celebrateTile(tile, q.amount * qty), 140);
+  if (navigator.vibrate) navigator.vibrate(12);
+}
+
+/* Bestätigung auf der Kachel: Häkchen + aufsteigender Betrag */
+function celebrateTile(tile, amount) {
+  if (!tile || !document.body.contains(tile)) return;
+  tile.classList.remove("qa-done");
+  void tile.offsetWidth; // Animation neu starten
+  tile.classList.add("qa-done");
+  clearTimeout(tile.qaTimer);
+  tile.qaTimer = setTimeout(() => tile.classList.remove("qa-done"), 1300);
+  if (REDUCED_MOTION) return;
+  const label = document.createElement("span");
+  label.className = "float-amount tabular";
+  label.setAttribute("aria-hidden", "true");
+  label.textContent = `+${money(amount)}`;
+  tile.appendChild(label);
+  label.addEventListener("animationend", () => label.remove(), { once: true });
+  setTimeout(() => label.remove(), 2000);
+}
+
+/* ── Einstellungen ── */
 function categoryOptions(selected) {
   return CAT_KEYS.map(k => `<option value="${k}" ${k === selected ? "selected" : ""}>${escapeHtml(CATEGORIES[k].label)}</option>`).join("");
 }
@@ -1319,10 +1730,10 @@ function renderSettings() {
   $("#settingsBody").innerHTML = `
     ${settingsSection("Haushalt", "fa-user-group", `
       <div class="grid grid-cols-2 gap-3">
-        <label class="field-label">Name Person A<input class="input mt-1" type="text" maxlength="24" data-setting="names.A" value="${escapeHtml(s.names.A)}"></label>
-        <label class="field-label">Name Person B<input class="input mt-1" type="text" maxlength="24" data-setting="names.B" value="${escapeHtml(s.names.B)}"></label>
+        <label class="field-label">Person 1<input class="input mt-1" type="text" maxlength="24" data-setting="names.A" value="${escapeHtml(s.names.A)}"></label>
+        <label class="field-label">Person 2<input class="input mt-1" type="text" maxlength="24" data-setting="names.B" value="${escapeHtml(s.names.B)}"></label>
       </div>
-      <p class="field-hint">Die Namen liegen in eurer Datenbank, nicht im öffentlichen Code.</p>`)}
+      <p class="field-hint">Erscheinen bei der Auswahl, in der Historie und im Dashboard.</p>`)}
 
     ${settingsSection("Berechnung", "fa-calculator", `
       <div class="grid grid-cols-2 gap-3">
@@ -1384,32 +1795,19 @@ function refreshSettingsSummary() {
   if (el) el.textContent = `${money(sum(activeRecurring().map(r => r.amount)))} / Monat`;
 }
 
-function isSettingsOpen() { return !$("#settingsSheet").classList.contains("hidden"); }
-
 function openSettings(sectionId) {
-  clearTimeout(sheetHideTimer);
   renderSettings();
-  const sheet = $("#settingsSheet");
-  sheet.classList.remove("hidden");
-  document.documentElement.classList.add("overflow-hidden");
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    $(".backdrop", sheet).classList.add("open");
-    $("#settingsPanel").classList.add("open");
-  }));
-  const body = $("#settingsBody");
-  body.scrollTop = 0;
-  if (sectionId) setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 340);
+  openSheet("settingsSheet");
+  $("#settingsBody").scrollTop = 0;
+  if (sectionId) {
+    setTimeout(() => document.getElementById(sectionId)?.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "start" }), 360);
+  }
 }
 
 function closeSettings() {
-  if (!isSettingsOpen()) return;
-  const sheet = $("#settingsSheet");
-  if (sheet.contains(document.activeElement)) document.activeElement.blur(); // löst „change“ aus
+  if (!isSheetOpen("settingsSheet")) return;
+  closeSheet("settingsSheet"); // blur zuerst, damit die letzte Eingabe übernommen wird
   flushSettings();
-  $(".backdrop", sheet).classList.remove("open");
-  $("#settingsPanel").classList.remove("open");
-  document.documentElement.classList.remove("overflow-hidden");
-  sheetHideTimer = setTimeout(() => sheet.classList.add("hidden"), 320);
 }
 
 function persistSettings() {
@@ -1437,7 +1835,7 @@ function onSettingsChange(e) {
     const key = t.dataset.setting;
     if (key === "names.A" || key === "names.B") {
       const p = key.slice(-1);
-      s.names[p] = cleanName(t.value, `Person ${p}`);
+      s.names[p] = cleanName(t.value, DEFAULT_NAMES[p]);
       t.value = s.names[p];
     } else if (key === "trackingStart") {
       if (isValidDateStr(t.value) && t.value <= todayStr()) s.trackingStart = t.value;
@@ -1546,8 +1944,8 @@ function exportCsv() {
     if (/^[=+\-@]/.test(s)) s = `'${s}`;
     return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const rows = [["Datum", "Titel", "Kategorie", "Person", "Netto (EUR)", "Brutto-Äquivalent (EUR)"]];
-  for (const e of state.entries) rows.push([e.date, e.title, CATEGORIES[e.category].label, personName(e.person), dec(e.amount), dec(e.amount * f)]);
+  const rows = [["Datum", "Titel", "Anzahl", "Kategorie", "Person", "Netto (EUR)", "Brutto-Äquivalent (EUR)"]];
+  for (const e of state.entries) rows.push([e.date, e.title, e.qty, CATEGORIES[e.category].label, personName(e.person), dec(e.amount), dec(e.amount * f)]);
   const blob = new Blob([`\ufeff${rows.map(r => r.map(cell).join(";")).join("\r\n")}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = Object.assign(document.createElement("a"), { href: url, download: `shadowwealth-${todayStr()}.csv` });
@@ -1560,19 +1958,19 @@ function exportCsv() {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   12 · AKTIONEN, TOASTS & GAMIFICATION
+   13 · AKTIONEN, TOASTS & GAMIFICATION
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function toast({ icon = "fa-circle-check", title = "", text = "", tone = "default", action = null, duration = 4200 }) {
   const stack = $("#toastStack");
   const el = document.createElement("div");
   el.setAttribute("role", "status");
-  el.className = "toast pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-2xl ring-1 ring-white/10";
+  el.className = `toast${tone === "reward" ? " toast-reward" : ""} pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-2xl ring-1 ring-white/10`;
   const iconClass = tone === "error" ? "bg-rose-500/20 text-rose-300"
     : tone === "reward" ? "bg-jade-400 text-ink"
     : "bg-jade-500/20 text-jade-300";
   el.innerHTML = `
-    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full ${iconClass}"><i class="fa-solid ${icon}"></i></span>
+    <span class="toast-icon grid h-9 w-9 shrink-0 place-items-center rounded-full ${iconClass}"><i class="fa-solid ${icon}"></i></span>
     <div class="min-w-0 flex-1">
       ${title ? `<p class="truncate text-sm font-semibold">${escapeHtml(title)}</p>` : ""}
       ${text ? `<p class="line-clamp-2 text-xs text-white/65">${escapeHtml(text)}</p>` : ""}
@@ -1602,6 +2000,7 @@ function addEntry(data) {
   const payload = {
     title: String(data.title).slice(0, 80),
     amount: round2(data.amount),
+    qty: clampQty(data.qty),
     category: CATEGORIES[data.category] ? data.category : "sonstiges",
     date: data.date,
     person: PERSONS.includes(data.person) ? data.person : "both",
@@ -1610,29 +2009,16 @@ function addEntry(data) {
   };
   const pending = store.add(payload);
   pending.catch(err => toastError("Speichern fehlgeschlagen", err));
+  const what = `${payload.qty > 1 ? `${payload.qty}× ` : ""}${payload.title}`;
   toast({
     icon: "fa-circle-check",
     title: `+${money(payload.amount)} gespart`,
-    text: `${payload.title}, entspricht ${money(payload.amount * grossFactor())} brutto`,
+    text: `${what}, ${relDayLabel(payload.date)}, ${whoLabel(payload.person)}`,
     action: {
       label: "Rückgängig",
       run: () => pending.then(id => store.remove(id)).catch(err => toastError("Rückgängig fehlgeschlagen", err)),
     },
   });
-}
-
-function quickAdd(id, button) {
-  const q = QUICK_ACTIONS.find(x => x.id === id);
-  if (!q) return;
-  addEntry({ title: q.title, amount: q.amount, category: q.category, date: todayStr(), person: state.person, quickId: q.id });
-  if (button) {
-    button.classList.remove("qa-done");
-    void button.offsetWidth; // Animation neu starten
-    button.classList.add("qa-done");
-    clearTimeout(button.qaTimer);
-    button.qaTimer = setTimeout(() => button.classList.remove("qa-done"), 900);
-  }
-  if (navigator.vibrate) navigator.vibrate(12);
 }
 
 function deleteEntry(id) {
@@ -1643,7 +2029,7 @@ function deleteEntry(id) {
   toast({
     icon: "fa-trash-can",
     title: "Eintrag gelöscht",
-    text: `${entry.title}, ${moneyExact(entry.amount)}`,
+    text: `${entry.qty > 1 ? `${entry.qty}× ` : ""}${entry.title}, ${moneyExact(entry.amount)}`,
     action: { label: "Rückgängig", run: () => store.restore(id, data).catch(err => toastError("Wiederherstellen fehlgeschlagen", err)) },
   });
 }
@@ -1652,10 +2038,14 @@ function showBadge(id) {
   const b = badgeList().find(x => x.id === id);
   if (!b) return;
   const progress = b.money ? `${money(Math.min(b.val, b.target))} von ${money(b.target)}` : `${Math.min(b.val, b.target)} von ${b.target}`;
-  toast({ icon: b.icon, tone: b.done ? "reward" : "default", title: b.done ? `${b.name}: freigeschaltet` : b.name, text: `${b.desc} ${b.done ? "" : `Stand: ${progress}.`}`.trim() });
+  toast({
+    icon: b.icon, tone: b.done ? "reward" : "default",
+    title: b.done ? `${b.name}: freigeschaltet` : b.name,
+    text: `${b.desc}${b.done ? "" : ` Stand: ${progress}.`}`,
+  });
 }
 
-/* Neue Abzeichen/Stufen dezent per Toast melden (pro Gerät gemerkt, ohne Spam beim ersten Start) */
+/* Neue Abzeichen/Stufen dezent melden (pro Gerät gemerkt, ohne Flut beim ersten Start) */
 function checkAchievements() {
   if (!state.entriesLoaded || !state.settingsLoaded) return;
   const unlocked = badgeList().filter(b => b.done).map(b => b.id);
@@ -1670,7 +2060,10 @@ function checkAchievements() {
     } else if (fresh.length > 1) {
       toast({ icon: "fa-trophy", tone: "reward", title: `${fresh.length} neue Abzeichen`, text: fresh.map(id => BADGES.find(x => x.id === id).name).join(", "), duration: 5500 });
     }
-    if (fresh.length) lsSet(nsKey("seenBadges"), [...new Set([...seen, ...unlocked])]);
+    if (fresh.length) {
+      fresh.forEach(id => state.ui.freshBadges.add(id));
+      lsSet(nsKey("seenBadges"), [...new Set([...seen, ...unlocked])]);
+    }
   }
 
   const level = levelInfo(allTimeNet()).idx;
@@ -1679,13 +2072,14 @@ function checkAchievements() {
     lsSet(nsKey("seenLevel"), level);
   } else if (level > seenLevel) {
     lsSet(nsKey("seenLevel"), level);
+    state.ui.levelUp = true;
     toast({ icon: LEVELS[level].icon, tone: "reward", title: `Stufe ${level + 1} erreicht: ${LEVELS[level].name}`, text: `Euer Schattenvermögen liegt jetzt über ${money(LEVELS[level].min)}.`, duration: 5500 });
   }
 }
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   13 · NAVIGATION, ANSICHT & EVENTS
+   14 · NAVIGATION, ANSICHT & EVENTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function refreshViews() {
@@ -1695,14 +2089,31 @@ function refreshViews() {
 }
 
 function switchTab(tab, { scroll = true } = {}) {
-  if (!["tracker", "dashboard", "history"].includes(tab)) return;
+  if (!TABS.includes(tab)) return;
+  const changed = state.tab !== tab;
+  const initial = state.tab === null;
   state.tab = tab;
+
   $$("[data-tab-panel]").forEach(p => p.classList.toggle("hidden", p.dataset.tabPanel !== tab));
   $$("nav [data-action='tab']").forEach(b => {
     if (b.dataset.tab === tab) b.setAttribute("aria-current", "page");
     else b.removeAttribute("aria-current");
   });
-  if (tab === "dashboard") renderDashboard();
+  $("#navIndicator").style.transform = `translateX(${TABS.indexOf(tab) * 100}%)`;
+
+  if (changed && !initial) {
+    const panel = $(`[data-tab-panel="${tab}"]`);
+    panel.classList.remove("panel-enter");
+    void panel.offsetWidth;
+    panel.classList.add("panel-enter");
+  }
+
+  // Beim Öffnen eines Tabs laufen Zahlen und Balken einmal von null hoch
+  if (changed && tab === "tracker") { resetAnim("t."); renderTracker(); }
+  if (tab === "dashboard") {
+    if (changed) { resetAnim("d."); destroyCharts(); }
+    renderDashboard();
+  }
   if (tab === "history") renderHistory();
   if (scroll) window.scrollTo({ top: 0 });
   try { history.replaceState(null, "", `#${tab}`); } catch { /* ignorieren */ }
@@ -1743,10 +2154,16 @@ function onClick(e) {
   const { action, id, value } = el.dataset;
   switch (action) {
     case "tab": switchTab(el.dataset.tab); break;
-    case "quick": quickAdd(id, el); break;
-    case "person":
-      if (PERSONS.includes(value)) { state.person = value; lsSet("sw.person", value); renderTracker(); }
+    case "person": setPerson(value); break;
+    case "quick": openQuick(id, el); break;
+    case "quick-date":
+      if (isValidDateStr(value)) { quickDraft.date = value; updateQuickSheet(); }
       break;
+    case "quick-qty":
+      quickDraft.qty = Math.min(MAX_QTY, Math.max(1, quickDraft.qty + Number(value)));
+      updateQuickSheet();
+      break;
+    case "quick-person": setPerson(value); updateQuickSheet(); break;
     case "delete": deleteEntry(id); break;
     case "view": setView(el.dataset.key, value); break;
     case "toggle-cat": toggleInView("cats", value); break;
@@ -1762,7 +2179,10 @@ function onClick(e) {
     case "toggle-chart-config": state.ui.chartConfigOpen = !state.ui.chartConfigOpen; renderDashboard(); break;
     case "badge": showBadge(id); break;
     case "open-settings": openSettings(el.dataset.section); break;
-    case "close-settings": closeSettings(); break;
+    case "close-sheet":
+      if (el.dataset.sheet === "settingsSheet") closeSettings();
+      else closeSheet(el.dataset.sheet);
+      break;
     case "add-recurring": addRecurring(); break;
     case "delete-recurring": deleteRecurring(id); break;
     case "reset-recurring": resetRecurring(); break;
@@ -1773,9 +2193,15 @@ function onClick(e) {
   }
 }
 
+function onQuickDateInput(t) {
+  quickDraft.date = t.value;
+  updateQuickSheet();
+}
+
 function onChange(e) {
   const t = e.target;
   if (t.closest("#settingsBody")) return; // eigener Handler
+  if (t.id === "quickDate") { onQuickDateInput(t); return; }
   if (t.dataset.viewInput) setView(t.dataset.viewInput, t.value);
   if (t.dataset.viewToggle) setView(t.dataset.viewToggle, t.checked);
 }
@@ -1801,7 +2227,7 @@ function setupForm() {
     if (!title || $("#fAmount").value.trim()) return;
     const match = state.entries.find(x => x.title.toLowerCase() === title);
     if (match) {
-      $("#fAmount").value = numDe(match.amount, 2);
+      $("#fAmount").value = numDe(match.amount / match.qty, 2);
       $("#fCategory").value = match.category;
     }
   });
@@ -1819,7 +2245,7 @@ function setupForm() {
     if (missing.length) { showFormError(`Bitte gib ${joinDe(missing)} an.`); return; }
     if (date > todayStr()) { showFormError("Das Datum liegt in der Zukunft. Trag den Verzicht ein, wenn er passiert ist."); return; }
     showFormError("");
-    addEntry({ title, amount, category, date, person: state.person });
+    addEntry({ title, amount, qty: 1, category, date, person: state.person });
     $("#fTitle").value = "";
     $("#fAmount").value = "";
     resetFormDate();
@@ -1839,9 +2265,19 @@ function checkDayChange() {
 function bindEvents() {
   document.addEventListener("click", onClick);
   document.addEventListener("change", onChange);
+  document.addEventListener("input", e => { if (e.target.id === "quickDate") onQuickDateInput(e.target); });
+  document.addEventListener("submit", e => {
+    if (e.target.id !== "quickForm") return;
+    e.preventDefault();
+    saveQuick();
+  });
   $("#settingsBody").addEventListener("change", onSettingsChange);
   $("#historySearch").addEventListener("input", e => { state.ui.historyQuery = e.target.value; renderHistory(); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && isSettingsOpen()) closeSettings(); });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (isSheetOpen("quickSheet")) closeSheet("quickSheet");
+    else if (isSheetOpen("settingsSheet")) closeSettings();
+  });
   window.addEventListener("pagehide", flushSettings);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) flushSettings();
@@ -1852,7 +2288,7 @@ function bindEvents() {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   14 · DATEN-EVENTS & START
+   15 · DATEN-EVENTS & START
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function onEntries(list, meta = {}) {
@@ -1870,6 +2306,11 @@ function onSettings(raw, meta = {}) {
   if (settingsSaveTimer) return; // lokale Änderung wartet noch aufs Speichern
   if (raw) {
     state.settings = normalizeSettings(raw);
+    // Alte Standardnamen („Person A/B“) einmalig dauerhaft durch Matze & Pia ersetzen
+    if (hasLegacyNames(raw) && !meta.fromCache && !state.namesMigrated) {
+      state.namesMigrated = true;
+      store.saveSettings(serializeSettings(state.settings)).catch(onStoreError);
+    }
   } else if (!meta.fromCache && !state.defaultsWritten) {
     // Erster Start: Standardwerte (inkl. Zählbeginn) dauerhaft festschreiben
     state.defaultsWritten = true;
@@ -1917,7 +2358,10 @@ function init() {
   renderBanner();
   renderTracker();
   const hash = location.hash.replace("#", "");
-  switchTab(["tracker", "dashboard", "history"].includes(hash) ? hash : "tracker", { scroll: false });
+  switchTab(TABS.includes(hash) ? hash : "tracker", { scroll: false });
+
+  // Gleitende Markierungen erst nach dem ersten Zeichnen animieren
+  requestAnimationFrame(() => requestAnimationFrame(() => $$(".no-anim").forEach(el => el.classList.remove("no-anim"))));
 
   store.subscribeSettings(onSettings, onStoreError);
   store.subscribeEntries(onEntries, onStoreError);
